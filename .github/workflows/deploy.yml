@@ -1,0 +1,33 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Install dependencies
+        run: |
+          cd /var/www/mysite
+          composer install --no-dev --optimize-autoloader
+
+      - name: Deploy code
+        run: |
+          rsync -avz --delete --exclude='.git/' $GITHUB_WORKSPACE/ /var/www/mysite/
+          sudo chown -R www-data:www-data /var/www/yourdomain.com
+
+      - name: Reload Nginx
+        run: |
+          sudo systemctl reload nginx
