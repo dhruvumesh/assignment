@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx mysql-server php-fpm php-mysql
+
+      - name: Copy nginx.conf
+        run: |
+          sudo cp nginx.conf /etc/nginx/sites-available/default
+          sudo systemctl restart nginx
+
+      - name: Setup MySQL
+        run: |
+          sudo mysql_secure_installation
+
+      - name: Setup WordPress
+        run: |
+          wp core download --path=/var/www/html --allow-root
+          wp config create --dbname=wordpress --dbuser=wordpressuser --dbpass=password --dbhost=localhost --dbprefix=wp_ --allow-root
+          wp core install --url=http://localhost --title=WordPress --admin_user=admin --admin_password=password --admin_email=admin@example.com --allow-root
+
+      - name: Deploy code
+        run: |
+          sudo cp -r * /var/www/html/
